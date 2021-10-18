@@ -1,0 +1,15 @@
+README.md
+setup.py
+sectoolkit/__init__.py
+sectoolkit/config.py
+sectoolkit/limiter.py
+sectoolkit/secfiling.py
+sectoolkit/secmeta.py
+sectoolkit/utils.py
+sectoolkit.egg-info/PKG-INFO
+sectoolkit.egg-info/SOURCES.txt
+sectoolkit.egg-info/dependency_links.txt
+sectoolkit.egg-info/requires.txt
+sectoolkit.egg-info/top_level.txt
+sectoolkit/formparsers/__init__.py
+sectoolkit/formparsers/parser_13D.py

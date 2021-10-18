@@ -1,0 +1,16 @@
+Metadata-Version: 2.1
+Name: sectoolkit
+Version: 0.1.6
+Summary: Tools for working with Securities and Exchange Commission (SEC) indices and filings.
+Home-page: https://github.com/dlouton/sectoolkit
+Author: Dave Louton
+Author-email: dlouton@bryant.edu
+License: MIT
+Description: # sectoolkit
+        Tools for working with Securities and Exchange Commission (SEC) indices and filings.
+        
+Platform: UNKNOWN
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
+Description-Content-Type: text/markdown
