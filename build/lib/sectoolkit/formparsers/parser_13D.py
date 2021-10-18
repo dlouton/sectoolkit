@@ -154,7 +154,7 @@ class parser_13D(object):
 		self.processedText = text
 
 
-	def get_item(self, itemNumber):
+	def _get_item(self, itemNumber):
 
 		if itemNumber == 0:
 			return self.body.get_text()
@@ -174,3 +174,10 @@ class parser_13D(object):
 				return item.strip()
 			else:
 				return "No Item {} found in this filing.".format(itemNumber)
+
+
+	def parse(self):
+		parsed = {}
+		for itemnum in range(1,8):
+			parsed['item_'+str(itemnum)] = self._get_item(itemnum)
+		return parsed
