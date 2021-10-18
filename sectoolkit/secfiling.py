@@ -83,25 +83,17 @@ class filingDocument(object):
 		self.body = bsFileContent
 		self.parser = ''
 
-	## Change this so that it returns a dictionary of parsed items.	
-	def _parse(self):
+
+	def parse(self):
 
 		if self.type in parsers.keys():
 			self.parser = parsers[self.type](self.body)
-			return
+			self.items = self.parser.parse()
+			return self.items
 		else:				
 			print('Unable to parse {} file.  This is not a supported form type.'.format(self.type))
 			return None
 
-	## This is a temporary solution until the parse dictionary format is implemented.
-	def get_item(self, itemnum):
-
-		# Make sure the document has been parsed
-		if self.parser == '':
-			self._parse()
-		# If the parser has been instantiated return the requested item.
-		if self.parser != '':
-			return self.parser.get_item(itemnum)
 
 		
 class filingArchive(object):

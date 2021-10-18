@@ -10,7 +10,7 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="sectoolkit",
-    version="0.1.6",
+    version="0.1.7",
     description="Tools for working with Securities and Exchange Commission (SEC) indices and filings.",
     long_description=README,
     long_description_content_type="text/markdown",
