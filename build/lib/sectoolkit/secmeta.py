@@ -14,7 +14,7 @@ from .config import default_datadir, sec_base_url, binary_file_types
 from .utils import seclimiter, timer, fetch_sec_file
 
 
-class meta(object):
+class idx(object):
     
     
     def __init__(self, datadir = default_datadir, start_year = 1993, \
@@ -216,7 +216,7 @@ class meta(object):
     def fetch_header_files(self, sec_proc_max = 0, verbose = False):
         
         if len(self.working_idx) == 0:
-            print("Run filter_index() before fetch_headers()...")
+            print("Run filter_index() before fetch_header_files()...")
             return
                             
         # Make sure that we have relevant paths for files in self.working_idx
@@ -227,7 +227,7 @@ class meta(object):
         fetchnum = 0
         self.hdrlist = []
         for file in list(self.working_idx.Filename):
-            hdr = headerfile(file, user_agent = self.user_agent)
+            hdr = headerfile(file, datadir = self.datadir, user_agent = self.user_agent)
             if not hdr.islocal:
                 fetchnum += 1
             self.hdrlist.append(hdr)
@@ -241,8 +241,8 @@ class meta(object):
             print('Finished fetching header files.')
         else:
             print('All header files are present in the local cache.')
-              
-    
+
+
     def clear_index_cache(self):
         self._clear_local_cache(self.idxdir)
         # Reset idxlist to an empty list since we have deleted the cached index files

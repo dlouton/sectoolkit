@@ -17,33 +17,6 @@ from .secmeta import headerfile
 from .formparsers import parsers
 
 
-# Read locally cached CIK, ticker and company name file, or fetch it from the SEC website.
-company_tickers_filename = '.' + os.sep + 'secdata' + os.sep + 'company_tickers.p'
-# Check whether the local file exists and if so when it was last modified
-if os.path.exists(company_tickers_filename):
-	mtime = os.path.getmtime(company_tickers_filename)
-else:
-	mtime = 0.0
-# Only use the local version of the file if it is less than a day old
-if (time() - mtime)/(60*60*24) < 1.0:
-	#Read the local copy of the file
-	t = pd.read_pickle(company_tickers_filename)
-else:
-	# Retrieve a fresh copy of the file
-	t = pd.read_json('https://www.sec.gov/files/company_tickers.json').transpose()
-	t['cik'] = t['cik_str'].apply(lambda x: str(x).zfill(10))
-	# Make sure that the local directory path exists
-	path = pathlib.Path(company_tickers_filename)
-	path.parent.mkdir(parents=True, exist_ok=True)
-	# Save a local copy of the file
-	t.to_pickle(company_tickers_filename)
-
-# Setup cik->ticker and cik->company name dictionaries
-ticker_dict = dict(zip(t.cik,t.ticker))
-name_dict = dict(zip(t.cik,t.title))
-
-
-
 class filingDocument(object):
 
 	
@@ -81,15 +54,17 @@ class filingDocument(object):
 		self.sequence = sequence
 		self.description = description
 		self.body = bsFileContent
-		self.parser = ''
+		self.parsed = {}
 
 
-	def parse(self):
+	def parse(self, **kwargs):
 
 		if self.type in parsers.keys():
-			self.parser = parsers[self.type](self.body)
-			self.items = self.parser.parse()
-			return self.items
+			# Instantiate a parser if one is availablet, passing in any kwargs that may be helpful for this form type.
+			self.parser = parsers[self.type](self.body, **kwargs)
+			# Call the parser's parse() function to do the actual work. 
+			self.parsed = self.parser.parse()
+			return self.parsed
 		else:				
 			print('Unable to parse {} file.  This is not a supported form type.'.format(self.type))
 			return None
@@ -143,12 +118,10 @@ class filingArchive(object):
 		self.binary_types = binary_file_types
 		self.limiter = ratelimiter
 		self.sec_filepath = sec_filepath
-		self.header = headerfile(self.sec_filepath, user_agent = self.user_agent).get_headerDict()
-		# self.__dict__.update(self.header.get_headerDict())
+		self.header = headerfile(self.sec_filepath, datadir = datadir, user_agent = self.user_agent).get_headerDict()
 		self.filingURL = sec_base_url + self.sec_filepath
 		self.filingsdir = datadir + os.sep + 'filings'
 		_, _, cik, fname = self.sec_filepath.split('/')
-		# self.filer_cik = cik
 		self.localfilename = os.sep.join([self.filingsdir, cik, fname])
 		self.indexURL = self.filingURL.rstrip('.txt')+'-index.html'
 		self.files = []

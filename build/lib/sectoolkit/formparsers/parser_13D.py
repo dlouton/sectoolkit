@@ -6,8 +6,9 @@ import re
 
 class parser_13D(object):
 
-	def __init__(self, file_body):
+	def __init__(self, file_body, **kwargs):
 		self.body = file_body
+		self.__dict__.update(kwargs)
 		self.cleanedText = ''
 		self.itemCutoffs = ''
 		self.processedText = ''
