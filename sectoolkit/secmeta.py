@@ -15,6 +15,29 @@ from .utils import seclimiter, timer, fetch_sec_file
 
 
 class idx(object):
+
+    """
+    Provides an interface to the SEC's collection of quarterly index files.
+
+
+    Required arguments:
+
+    user_agent :    (default = None) The SEC requires that all files requests contain a header specifying
+                    a user agent string of the form "<Company or institution name>, <contact email>".  See 
+                    the SEC developer page for further details: https://www.sec.gov/os/accessing-edgar-data
+
+    Optional arguments:
+
+    datadir             :   (default creates 'secdata' subdirectory under the current directory)  This is 
+                            where locally cached SEC files will be stored.
+    start_year          :   (default = 1993 specifies the start of the SEC's online filing collection)
+    start_quarter       :   (default = 1)
+    end_year            :   (default = 0 specifies the current year)
+    end_quarter         :   (default = 4)
+    rate_limiter        :   (defaults to rate_limiter class provided in limiter sub-package)
+    binary_file_types   :   (defaults to ['gz', 'zip', 'Z'])
+
+    """
     
     
     def __init__(self, datadir = default_datadir, start_year = 1993, \
@@ -41,10 +64,13 @@ class idx(object):
         
         
     def _idxurls(self):
+        """
+        Creates a list of URLs for the SEC quarterly index files included in the date range 
+        specified by the instance beg_yr, beg_qtr, end_yr and end_qtr variables.
+        """
         ## Need to add some type checking and bounds checking on input parameters
         if self.end_yr == 0:
             self.end_yr = datetime.date.today().year
-            ## More work needed to fine tune this logic
             current_qtr = (datetime.date.today().month - 1) // 3 + 1
             if self.end_qtr > current_qtr:
                 self.end_qtr = current_qtr
@@ -61,6 +87,12 @@ class idx(object):
 
                 
     def _filter_index_file(self, file, filters, verbose = False):
+        """
+        Apply row filters specified in filters dictionary to a particular index file.  An empty filter
+        dictionary will return the entire index file.
+
+        Note: Filtering on date ranges is not yet supported.
+        """
         if verbose:
             print(file, '\n')
         df = pd.read_csv(file, sep = '|', skiprows = 9, compression = 'gzip', \
@@ -75,6 +107,9 @@ class idx(object):
 
 
     def _clear_local_cache(self, localdir, suffix = None):
+        """
+        Deletes all locally cached SEC files.
+        """
         for root, dirs, files in os.walk(localdir, topdown=False):
             for fname in files:
                 fpath = (os.sep).join([root, fname])
@@ -103,6 +138,10 @@ class idx(object):
     
     
     def _convert_sec_filename(self, sec_filename):
+        """
+        Accepts SEC filepath as input and returns retrieval URL for SGML header file and local filepath
+        where header file may be cached.
+        """
         _, _, cik, fname = sec_filename.split('/')
         fname_body = fname.split('.')[0]
         new_fname = fname_body+'.hdr.sgml'
@@ -112,6 +151,10 @@ class idx(object):
     
     
     def _get_working_paths(self):
+        """
+        Creates a list of SGML headerfile URL and local file path tutples for all filings included in the 
+        current working_idx of filings.
+        """
         if len(self.working_idx) == 0:
             print("Run filter_index() first...")
             return []
@@ -124,10 +167,13 @@ class idx(object):
 
     def _process_files(self, function, filelist, func_args, max_processes = 0, \
                        verbose = False):
+        """
+        This utility function makes use of multiple CPU cores to run the same function on multiple
+        input files.  It returns function output to the calling function in list form for aggregation.
+
+        """
         
         files = [x for x in filelist if x != None]
-#         self.pbar = tqdm(total = len(files))
-#         self.results = []
         completed = []
         inprocess = []
         if mp.cpu_count() <= max_processes or max_processes == 0:
@@ -152,6 +198,12 @@ class idx(object):
             
     @timer
     def updateidx(self, verbose = False):
+        """
+        Updates the locally cached quarterly index files for the date range specified in the instance dict.
+        By default the most recent quarterly index file included in the local cache is deleted and replaced 
+        by the most current version available from the SEC website.
+
+        """
         
         print("Updating locally cached SEC index files...")
         
@@ -186,19 +238,37 @@ class idx(object):
        
     
     def show_index_fields(self):
+        """
+        Return index file column names and data types.
+        """
         df = pd.read_csv(self.idxlist[-1], sep = '|', skiprows = 9, compression = 'gzip', \
-        	parse_dates = [3], encoding = 'latin-1', low_memory = False, nrows = 12)
+        	parse_dates = [3], encoding = 'latin-1', low_memory = False, nrows = 5)
         return df.dtypes
     
     
     def index_peek(self, rows = 5):
-        # Read the index file for the current quarter
+        """
+        Read the a specified number of rows from the index file for the most recent quarter in the date range
+        specified in the instance dict.
+        """
         df = pd.read_csv(self.idxlist[-1], sep = '|', skiprows = 9, compression = 'gzip', \
         	parse_dates = [3], encoding = 'latin-1', low_memory = False)
         return df.tail(rows)
     
+
     @timer
     def filter_index(self, filters = {}, verbose = False):
+        """
+        Apply filters to the full set of index files for the date range specified in the index dict
+        to create a working index.
+
+        Arguments:
+
+        filters     :   (default = {})  Specify a dictionary containing column specific row filters to 
+                        be applied to the index files.
+        verbose     :   (default = False)
+
+        """
         
         # Initialize a dataframe that will contain filtered index records
         self.working_idx = pd.DataFrame()
@@ -214,6 +284,10 @@ class idx(object):
 
     
     def fetch_header_files(self, sec_proc_max = 0, verbose = False):
+        """
+        Fetch any SGML header files for the current working index that are not already present in the
+        local cache.
+        """
         
         if len(self.working_idx) == 0:
             print("Run filter_index() before fetch_header_files()...")
@@ -244,12 +318,18 @@ class idx(object):
 
 
     def clear_index_cache(self):
+        """
+        Delete locally cached SEC index files.
+        """
         self._clear_local_cache(self.idxdir)
         # Reset idxlist to an empty list since we have deleted the cached index files
         self.idxlist = []
     
     
     def clear_header_cache(self):
+        """
+        Delete locally cached SGML header files.
+        """
         self._clear_local_cache(self.hdrdir)
         # Reset hdrlist to an empty list since we have deleted the cached index files
         self.hdrlist = []
@@ -257,6 +337,25 @@ class idx(object):
 
 
 class headerfile(object):
+
+    """
+    Provides an interface to the SGML header file that provides meta data for a specific SEC filing.
+
+
+    Required arguments:
+
+    sec_filename    :   The SEC filepath specified in the last field of the index record for the filing. 
+    user_agent      :   (default = None) The SEC requires that all files requests contain a header specifying 
+                        a user agent string of the form "<Company or institution name>, <contact email>".  
+                        See the SEC developer page for further details: https://www.sec.gov/os/accessing-edgar-data
+
+    Optional arguments:
+
+    datadir             :   (default creates 'secdata' subdirectory under the current directory)  This is 
+                            where locally cached SEC files will be stored.
+    rate_limiter        :   (defaults to rate_limiter class provided in limiter sub-package)
+
+    """
     
     
     def __init__(self, sec_filename, datadir = default_datadir, \
@@ -271,7 +370,12 @@ class headerfile(object):
         self.islocal = os.path.exists(self.localpath)
         
 
+    ## This should be pulled out as a standalone function since it is needed by both idx and headerfile classes.
     def _convert_sec_filename(self, sec_filename):
+        """
+        Accepts SEC filepath as input and returns retrieval URL for SGML header file and local filepath
+        where header file may be cached.
+        """
         _, _, cik, fname = sec_filename.split('/')
         fname_body = fname.split('.')[0]
         new_fname = fname_body+'.hdr.sgml'
@@ -282,7 +386,7 @@ class headerfile(object):
     
     def _SGMLfiletoDict(self):
         """
-        Reads an SEC SGML header file and converts it to a JSON string.
+        Reads an SGML header file and converts it to a Python dictionary.
         """
         end_tags = []
         xmlstring = ''
@@ -307,6 +411,9 @@ class headerfile(object):
 
 
     def get_headerDict(self, verbose = False):
+        """
+        Returns the contents of the SGML header file in dictionary form.
+        """
 
         if not self.islocal:
             self.fetch_file(verbose = verbose)
@@ -315,6 +422,10 @@ class headerfile(object):
     
     
     def fetch_file(self, content = False, verbose = False):
+        """
+        Downloads the SGML header file from the SEC website.
+
+        """
             
         _ = fetch_sec_file(self.url, self.localpath, content = content, limiter = self.limiter, \
             user_agent = self.user_agent, verbose = verbose)

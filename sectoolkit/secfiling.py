@@ -42,8 +42,9 @@ class filingDocument(object):
 
 	Methods
 	-------
-	parse(itemNumber):
-		Returns a dictionary of parsed items if the document file type is supported.
+	parse():
+		Returns a dictionary of parsed items if there is a registered parser for the document
+		file type.
 	"""
 
 	
@@ -54,13 +55,16 @@ class filingDocument(object):
 		self.sequence = sequence
 		self.description = description
 		self.body = bsFileContent
+		self.parser = ''
 		self.parsed = {}
 
 
 	def parse(self, **kwargs):
 
+		## This proceeds if a default parser for the file type has been registered, but need to add a 
+		## check to see whether a custom parser has been specified in the self.parser instance variable.
 		if self.type in parsers.keys():
-			# Instantiate a parser if one is availablet, passing in any kwargs that may be helpful for this form type.
+			# Instantiate a parser if one is available, passing in any kwargs that may be helpful for this form type.
 			self.parser = parsers[self.type](self.body, **kwargs)
 			# Call the parser's parse() function to do the actual work. 
 			self.parsed = self.parser.parse()
@@ -74,42 +78,25 @@ class filingDocument(object):
 class filingArchive(object):
 
 	"""
-	This class represents an SEC filing archive file. 
-
-	...
-
-	Inputs
-	------
-	sec_filepath : str
-		path to the filing archive as shown in its SEC index file entry
-	datadir : str
-		path to local directory where SEC related files are can be cached - default
-		creates subdirectory 'secdata' under the current working directory.
+	Provides an interface to an SEC filing archive containing files related to a specific filing listed
+	in the SEC index. 
 
 
-	Attributes
-	----------
-	sec_filepath : str
-		path to the file as shown in its SEC index file entry
-	filingURL : str
-		full URL needed to locate the archive file using a web browser
-	filingsdir : str
-		local directory where the cached version of the filing archive is stored
-	localfilename : str
-		full name and path of the locally cached archive file
-	indexURL:
-		URL of the SEC subdirectory where items related to the filing are stored
+	Required arguments:
+	
+	sec_filepath 	: 	path to the filing archive as shown in its SEC index file entry.
+	user_agent 		:   (default = None) The SEC requires that all files requests contain a header specifying
+                    	a user agent string of the form "<Company or institution name>, <contact email>".  See 
+                    	the SEC developer page for further details: https://www.sec.gov/os/accessing-edgar-data
 
+    Optional arguments:
 
-	Methods
-	-------
-	browse():
-		Opens a browser window in the SEC subdirectory where items related to the filing are stored.
-	get_filingArchive():
-		Retrieves and parses the archive file and creates a collection of filing document objects 
-		exposing the documents contained in the archive.
-	get_filenames():
-		Returns a list of files contained within the archive.
+    datadir             :   (default creates 'secdata' subdirectory under the current directory)  This is 
+                            where locally cached SEC files will be stored.
+    rate_limiter        :   (defaults to rate_limiter class provided in limiter sub-package)
+    binary_file_types   :   (defaults to ['gz', 'zip', 'Z'])
+    
+		
 	"""
 
 	def __init__(self, sec_filepath, datadir = default_datadir, ratelimiter = seclimiter, \
@@ -129,15 +116,24 @@ class filingArchive(object):
 
 
 	def browse(self):
-
+		"""
+		Opens a browser window in the SEC subdirectory where items related to the filing are stored.
+		"""
 		wb.open(self.indexURL)
   
 	
 	def check_localfile(self):
+		"""
+		Verify that file is present in the local cache.
+		"""
 		return os.path.exists(self.localfilename)
 
 	
 	def get_filingArchive(self, document_types = 'ALL', text_only = True, verbose = False):
+		"""
+		Retrieves and parses the archive file and creates a collection of filing document objects 
+		exposing the documents contained in the archive.
+		"""
 
 		self.doc_types = document_types
 		self.text_only = text_only
@@ -198,6 +194,9 @@ class filingArchive(object):
 
 
 	def get_filenames(self):
+		"""
+		Returns a list of files contained within the filing archive.
+		"""
 		if any(self.files):
 			filenames = []
 			for file in self.files:
