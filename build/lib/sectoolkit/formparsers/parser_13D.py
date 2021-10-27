@@ -3,10 +3,15 @@ import unicodedata
 import numpy as np
 import re
 
-from .parser_base import parser_base
 
-class parser_13D(parser_base):
-	
+class parser_13D(object):
+
+	def __init__(self, file_body, **kwargs):
+		self.body = file_body
+		self.__dict__.update(kwargs)
+		self.cleanedText = ''
+		self.itemCutoffs = ''
+		self.processedText = ''
 
 	def _cleanFileText(self):
 			
@@ -32,7 +37,8 @@ class parser_13D(parser_base):
 		
 	def _findItems(self):
 		
-		self._cleanFileText()
+		if self.cleanedText == '':
+			self._cleanFileText()
 
 		text = self.cleanedText
 
@@ -155,7 +161,8 @@ class parser_13D(parser_base):
 			return self.body.get_text()
 
 		else:
-			self._findItems()
+			if len(self.itemCutoffs) == 0:
+				self._findItems()
 
 			if itemNumber + 1 <= len(self.itemCutoffs):
 				end = itemNumber + 1
@@ -170,6 +177,8 @@ class parser_13D(parser_base):
 				return "No Item {} found in this filing.".format(itemNumber)
 
 
-	def _parsing_work_function(self):
+	def parse(self):
+		parsed = {}
 		for itemnum in range(1,8):
-			self.parsed['item_'+str(itemnum)] = self._get_item(itemnum)
+			parsed['item_'+str(itemnum)] = self._get_item(itemnum)
+		return parsed

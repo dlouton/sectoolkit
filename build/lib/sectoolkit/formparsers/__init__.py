@@ -1,6 +1,5 @@
 
 
-from .parser_base import parser_base
 from .parser_13D import parser_13D
 
 # Register available parsers
