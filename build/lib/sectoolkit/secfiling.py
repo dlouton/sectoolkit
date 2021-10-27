@@ -61,15 +61,18 @@ class filingDocument(object):
 
 	def parse(self, **kwargs):
 
-		## This proceeds if a default parser for the file type has been registered, but need to add a 
-		## check to see whether a custom parser has been specified in the self.parser instance variable.
-		if self.type in parsers.keys():
-			# Instantiate a parser if one is available, passing in any kwargs that may be helpful for this form type.
+		# First check to see whether a custom parser has been specified in the self.parser instance variable.
+		if self.parser != '':
+			return self.parser.parse()
+		elif self.type in parsers.keys():
+			# Instantiate a defualt parser if one is available for this form type, passing in any kwargs that 
+			# may be required or useful.
 			self.parser = parsers[self.type](self.body, **kwargs)
 			# Call the parser's parse() function to do the actual work. 
 			self.parsed = self.parser.parse()
 			return self.parsed
-		else:				
+		else:
+			# If no parser is available, inform the user of the situation.				
 			print('Unable to parse {} file.  This is not a supported form type.'.format(self.type))
 			return None
 

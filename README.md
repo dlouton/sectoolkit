@@ -38,10 +38,10 @@ class parser_base(object):
         # Return the dictionary of parsed items.
         return self.parsed
 ```
-You can then add it to the parsers dictionary as the default for particular form types as follows:
+You can then add your custom parser to the parsers dictionary as the default for particular form types.  For example, if you created an 8-K parser with class name parser_8K, you would add it as follows:
 ```
-`sectoolkit.parsers['8-K'] = parser_8K`
-`sectoolkit.parsers['8-K/A'] = parser_8K`
+sectoolkit.parsers['8-K'] = parser_8K
+sectoolkit.parsers['8-K/A'] = parser_8K
 ```
 Also, note the support for optional keyword arguments when instantiating the parser class.  These items are added to the instance `__dict__` for the parser and are then available to be accessed by the parsing code included in the body of the parser class. 
 

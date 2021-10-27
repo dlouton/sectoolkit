@@ -49,6 +49,7 @@ class idx(object):
         self.datadir = datadir
         self.idxdir = os.path.join(self.datadir, 'idxfiles')
         self.hdrdir = os.path.join(self.datadir, 'headerfiles')
+        self.filingsdir = os.path.join(self.datadir, 'filings')
         self.parsed_header_cache = os.path.join(self.datadir, 'parsed_header_cache.p')
         self.sec_base = sec_base_url
         self.limiter = rate_limiter
@@ -58,6 +59,7 @@ class idx(object):
         self.end_qtr = end_quarter
         self.idxlist = self.updateidx()
         self.hdrlist = []
+        self.filinglist = []
         self.localparsed = []
         self.working_idx = pd.DataFrame() # initialize as empty dataframe to avoid exceptions
         self.working_paths = []
@@ -139,8 +141,8 @@ class idx(object):
     
     def _convert_sec_filename(self, sec_filename):
         """
-        Accepts SEC filepath as input and returns retrieval URL for SGML header file and local filepath
-        where header file may be cached.
+        Accepts SEC filepath as input and returns retrieval URL for SGML header file and 
+        local filepath where header file may be cached.
         """
         _, _, cik, fname = sec_filename.split('/')
         fname_body = fname.split('.')[0]
@@ -152,7 +154,7 @@ class idx(object):
     
     def _get_working_paths(self):
         """
-        Creates a list of SGML headerfile URL and local file path tutples for all filings included in the 
+        Creates a list of SGML headerfile URL and local file path tuples for all filings included in the 
         current working_idx of filings.
         """
         if len(self.working_idx) == 0:
@@ -315,6 +317,45 @@ class idx(object):
             print('Finished fetching header files.')
         else:
             print('All header files are present in the local cache.')
+
+
+    def fetch_filings(self, sec_proc_max = 0, verbose = False):
+        """
+        Fetch any filing archives files included in the current working index if they are not already 
+        present in the local file cache.
+        """
+        
+        if len(self.working_idx) == 0:
+            print("Run filter_index() before fetch_filings()...")
+            return
+
+        # Make sure that we have URLs and local filepaths for all filing archives in self.working_idx.
+        filing_paths = []
+        for sec_filepath in list(self.working_idx.Filename):
+            filingURL = self.sec_base + sec_filepath
+            _, _, cik, fname = sec_filepath.split('/')
+            localfilepath = os.sep.join([self.filingsdir, cik, fname])
+            filing_paths.append((filingURL, localfilepath))
+           
+        # Determine whether additional filing archives need to be fetched from the SEC
+        fetchnum = 0
+        fetchlist = []
+        self.filinglist = []
+        for item in filing_paths:
+            if not os.path.exists(item[1]):
+                fetchnum += 1
+                fetchlist.append(item)
+            else:
+                self.filinglist.append(item[1])
+        
+        # Fetch any additional filing archives that are needed - single threaded because of SEC rate limit.
+        if fetchnum != 0:
+            print('Fetching {} filing archives ...'.format(fetchnum))
+            for item in fetchlist:
+                fetch_sec_file(item[0], item[1], user_agent = self.user_agent, verbose = True)
+            print('Finished fetching filing archives.')
+        else:
+            print('All filing archives are present in the local cache.')
 
 
     def clear_index_cache(self):

@@ -13,3 +13,4 @@ sectoolkit.egg-info/requires.txt
 sectoolkit.egg-info/top_level.txt
 sectoolkit/formparsers/__init__.py
 sectoolkit/formparsers/parser_13D.py
+sectoolkit/formparsers/parser_base.py
