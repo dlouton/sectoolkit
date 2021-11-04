@@ -18,7 +18,7 @@ The `idx` class provides an interface to the SEC's collection of quarterly index
 **Required arguments:**
 
 *user_agent* 	:    	(default = None)   The SEC requires that all files requests contain a header 
-									specifying a user agent string of the form "<Company or institution name>, 									<contact email>".  See the SEC developer page for further details: 
+									specifying a user agent string of the form "Company or institution name, 									contact email".  See the SEC developer page for further details: 
 									https://www.sec.gov/os/accessing-edgar-data
 
 **Optional arguments:**
@@ -29,7 +29,7 @@ The `idx` class provides an interface to the SEC's collection of quarterly index
 *start_quarter*	:   	(default = 1)
 *end_year*           :  	 (default = 0, which specifies the current year)
 *end_quarter*     :   	(default = 4)
-*rate_limiter*       :   	(defaults to rate_limiter class provided in limiter sub-package)
+*rate_limiter*       :   	(defaults to the rate_limiter class provided in limiter sub-package)
 *binary_file_types*   :   (defaults to ['gz', 'zip', 'Z'])
 
 **Methods:**
@@ -73,7 +73,7 @@ The `idx` class provides an interface to the SEC's collection of quarterly index
 ```
 import sectoolkit as sec
 
-# Define user-agent as per SEC developer guidelines
+# Define a user-agent as per SEC developer guidelines.
 user_agent_str = "<company or institution>, <contact email>"
 
 # Instantiate the idx class
@@ -113,15 +113,15 @@ To implement a custom parser, sub-class the following parser base class, which i
 class parser_base(object):
 
     def __init__(self, file_body, **kwargs):
-        # 
-        self.body = file_body
-        # Include any optional key word arguments that were provided in 
+        # self.body = file_body
+        # Add any optional key word arguments that were provided to 
         # the instance dictionary
         self.__dict__.update(kwargs)
         # Initialize the dictionary that will receive parsed items
         self.parsed = {}
 
-    # Override this in parser subclasses to implement parsers for different form types.
+    # Override this function in parser subclasses to implement parsers 
+    # for specific form types.
     def _parsing_work_function(self):
         # Get all the real work done here and in other internal functions
 
