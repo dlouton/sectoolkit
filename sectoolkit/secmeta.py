@@ -206,7 +206,8 @@ class idx(object):
         by the most current version available from the SEC website.
 
         """
-        
+        ## Also need to suppress timer report if verbose output has not been requested
+        # if verbose:
         print("Updating locally cached SEC index files...")
         
         # Catalog locally saved index files
@@ -218,21 +219,18 @@ class idx(object):
             last = idxlocal.pop()
             os.remove(last)
         else:
-            print("You don't seem to have any SEC index files cached in your data directory.")
-            print("Downloading these files for the first time may take 1-4 minutes.")
+            if verbose:
+                print("You don't seem to have any SEC index files cached in your data directory.")
+                print("Downloading these files for the first time may take a few minutes.")
 
         # Fetch any missing idxfiles
         idxlist = []
         ## Need to fix first day of the quarter problem with self._idxurls()
-        ## Speed this loop up by using multi-processing ?
         for url in tqdm(self._idxurls()):
             idxpath = self.idxdir+os.sep+os.sep.join(url.split('/')[-3:])
             if idxpath not in idxlocal:
                 path = pathlib.Path(idxpath)
                 path.parent.mkdir(parents=True, exist_ok=True)
-                ## Need to add some checks here to flag download errors
-                ## Also need to find a better way to do this since urlretrieve 
-                ## is slated for deprecation
                 fname = fetch_sec_file(url, idxpath, user_agent = self.user_agent, verbose = verbose)
             idxlist.append(idxpath)
             
@@ -277,15 +275,17 @@ class idx(object):
         
         # Run filters on index files
         ## Need to improve this to allow for interactive, iterative, filtering.
-        print('Filtering {} quarterly index files ...'.format(len(self.idxlist)))
+        if verbose:
+            print('Filtering {} quarterly index files ...'.format(len(self.idxlist)))
         filter_results = self._process_files(self._filter_index_file, self.idxlist, (filters,))
         self.working_idx = pd.concat([x for x in filter_results if len(x) != 0]) 
-        print("Filtered index contains ", len(self.working_idx), " records.")
+        if verbose:
+            print("Filtered index contains ", len(self.working_idx), " records.")
         
         return self.working_idx
 
     
-    def fetch_header_files(self, sec_proc_max = 0, verbose = False):
+    def fetch_headers(self, verbose = False):
         """
         Fetch any SGML header files for the current working index that are not already present in the
         local cache.
@@ -310,19 +310,29 @@ class idx(object):
         
         # Fetch any additional header files that are needed - single threaded because of SEC rate limit.
         if fetchnum != 0:
-            print('Fetching {} header files ...'.format(fetchnum))
+            if verbose:
+                print('Fetching {} header files ...'.format(fetchnum))
             for item in self.hdrlist:
                 if not item.islocal:
-                    item.fetch_file(verbose = True)
-            print('Finished fetching header files.')
+                    item.fetch_file(verbose = verbose)
+            if verbose:
+                print('Finished fetching header files.')
         else:
-            print('All header files are present in the local cache.')
+            if verbose:
+                print('All header files are present in the local cache.')
 
 
-    def fetch_filings(self, sec_proc_max = 0, verbose = False):
+    def fetch_filings(self, headers = False, verbose = False):
         """
-        Fetch any filing archives files included in the current working index if they are not already 
+        Fetch any filing archive files included in the current working index if they are not already 
         present in the local file cache.
+
+        Arguments:
+
+        headers     :   (default = False)  Also download the SGML header file for each filing
+                        and store it in the local cache.
+        verbose     :   (default = False)
+
         """
         
         if len(self.working_idx) == 0:
@@ -350,12 +360,19 @@ class idx(object):
         
         # Fetch any additional filing archives that are needed - single threaded because of SEC rate limit.
         if fetchnum != 0:
-            print('Fetching {} filing archives ...'.format(fetchnum))
+            if verbose:
+                print('Fetching {} filing archives ...'.format(fetchnum))
             for item in fetchlist:
-                fetch_sec_file(item[0], item[1], user_agent = self.user_agent, verbose = True)
-            print('Finished fetching filing archives.')
+                fetch_sec_file(item[0], item[1], user_agent = self.user_agent, verbose = verbose)
+            if verbose:
+                print('Finished fetching filing archives.')
         else:
-            print('All filing archives are present in the local cache.')
+            if verbose:
+                print('All filing archives are present in the local cache.')
+
+        # Also fetch SGML header files if requested.
+        if headers:
+            self.fetch_headers(verbose = verbose)
 
 
     def clear_index_cache(self):
@@ -372,8 +389,18 @@ class idx(object):
         Delete locally cached SGML header files.
         """
         self._clear_local_cache(self.hdrdir)
-        # Reset hdrlist to an empty list since we have deleted the cached index files
-        self.hdrlist = []
+        # Reset islocal attribute to False for all items in hdrlist since we have deleted the cached header files
+        for item in self.hdrlist:
+            item.islocal = False
+
+
+    def clear_filing_cache(self):
+        """
+        Delete locally cached filing archive files.
+        """
+        self._clear_local_cache(self.filingsdir)
+        # Reset filinglist to an empty list since we have deleted the cached filing archive files
+        self.filinglist = []
 
 
 
@@ -386,7 +413,7 @@ class headerfile(object):
     Required arguments:
 
     sec_filename    :   The SEC filepath specified in the last field of the index record for the filing. 
-    user_agent      :   (default = None) The SEC requires that all files requests contain a header specifying 
+    user_agent      :   (default = None) The SEC requires that all file requests contain a header specifying 
                         a user agent string of the form "<Company or institution name>, <contact email>".  
                         See the SEC developer page for further details: https://www.sec.gov/os/accessing-edgar-data
 

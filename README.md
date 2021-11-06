@@ -18,7 +18,7 @@ The `idx` class provides an interface to the SEC's collection of quarterly index
 **Required arguments:**
 
 *user_agent* 	:    	(default = None)   The SEC requires that all files requests contain a header 
-									specifying a user agent string of the form "Company or institution name, 									contact email".  See the SEC developer page for further details: 
+									specifying a user agent string of the form "company or institution name, 									contact email".  See the SEC developer page for further details: 
 									https://www.sec.gov/os/accessing-edgar-data
 
 **Optional arguments:**
@@ -40,13 +40,13 @@ The `idx` class provides an interface to the SEC's collection of quarterly index
 *clear_index_cache()*
 		Delete locally cached SEC index files.
 
-*fetch_filings(verbose=False)*
-		Fetch any filing archives files included in the current working index if they are 
-		not already present in the local file cache.  Also fetches the related SGML header
-		file if it is not already locally cached.
+*fetch_filings(headers = False, verbose=False)*
+		Fetch the filing archive files for filings included in the current working index if they are 
+		not already present in the local file cache.  Optionally, specify the headers=True option 
+		to fetch the related SGML header file if it is not already locally cached.
 
-*fetch_header_files(verbose=False)*
-		Fetch any SGML header files for the current working index that are not already 
+*fetch_headers(verbose=False)*
+		Fetch the SGML header files for filings included in the current working index if they are not already 
 		present in the local cache.
 
 *filter_index(filters = {}, verbose = False)*
@@ -57,7 +57,7 @@ The `idx` class provides an interface to the SEC's collection of quarterly index
 		be applied directly to the `working_idx` dataframe within Pandas.
 
 *index_peek(rows=5)*
-		Read the a specified number of rows from the index file for the most recent quarter in the 
+		Read a specified number of rows from the index file for the most recent quarter in the 
 		date range specified in the instance dictionary.
 
 *show_index_fields()*
@@ -86,11 +86,12 @@ filters = {'CIK': ['1336528'], 'Form Type': ['SC 13D']}
 idx.filter_index(filters)
 
 # If desired, bulk download all filings listed in idx.working_idx
+# Optionally include the SGML header files by specifying headers = True
 idx.fetch_filings(verbose=True)
 
 # Alternatively, just download the SGML header files in order to access
 # more detailed meta data on each filing.
-idx.fetch_header_files()
+idx.fetch_headers(verbose=True)
 ```
 
 ### Working with header files
