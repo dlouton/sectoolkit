@@ -4,6 +4,7 @@ import pandas as pd
 from time import time
 import re
 import os
+import shutil
 import os.path
 import sys
 import pathlib
@@ -37,7 +38,9 @@ class filingDocument(object):
 	description : str
 		file description field as shown in the SEC filing archive file
 	body : str
-		file content - note that for binary files this field is stored in uuencoded form
+		file content stripped of html markup - note that for binary files this field is stored in uuencoded form
+	html : str
+		complete file contents - note that for binary files this field is stored in uuencoded form
 
 
 	Methods
@@ -48,16 +51,16 @@ class filingDocument(object):
 	"""
 
 	
-	def __init__(self, fileName, fileType, sequence, description, bsFileContent):
+	def __init__(self, fileName, fileType, sequence, description, bstext, bsdoc):
 
 		self.filename = fileName
 		self.type = fileType
 		self.sequence = sequence
 		self.description = description
-		self.body = bsFileContent
+		self.body = bstext
+		self.html = bsdoc
 		self.parser = ''
 		self.parsed = {}
-
 
 	def parse(self, **kwargs):
 
@@ -75,7 +78,6 @@ class filingDocument(object):
 			# If no parser is available, inform the user of the situation.				
 			print('Unable to parse {} file.  This is not a supported form type.'.format(self.type))
 			return None
-
 
 		
 class filingArchive(object):
@@ -179,12 +181,12 @@ class filingArchive(object):
 				else:
 					description = '_'
 				if doc.find('text'):
-					text = doc.find('text')
+					text = doc.get_text()
 				else:
 					text = '_'
 				if doc_type in self.doc_types or self.doc_types == 'ALL':
 					if (fn.split('.')[-1] in text_suffixes) or not self.text_only:
-						self.files.append(filingDocument(fn, doc_type, sequence, description, text))
+						self.files.append(filingDocument(fn, doc_type, sequence, description, text, doc))
 
 			if verbose:
 				for f in self.files:
@@ -205,5 +207,19 @@ class filingArchive(object):
 			for file in self.files:
 				filenames.append(file.filename)
 		return filenames
+
+
+	def copy_filingArchive(self, newfilepath):
+		# Make sure that the directory path exists
+		path = pathlib.Path(newfilepath)
+		path.parent.mkdir(parents=True, exist_ok=True)
+		# Copy the file to the new location
+		shutil.copyfile(self.localfilename, newfilepath)
+
+
+	def delete_filingArchive(self):
+		if os.path.exists(self.localfilename):
+			os.remove(self.localfilename)
+		# Add some additional code here to delete the current directory and parent directory if the are now empty
 
 

@@ -1,4 +1,4 @@
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 # Import items from sub-modules into sectoolkit namespace
 from .secmeta import (idx, headerfile)
